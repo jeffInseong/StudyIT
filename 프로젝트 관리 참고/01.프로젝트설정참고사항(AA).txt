@@ -1,0 +1,62 @@
+1. 각 프로젝트의 디자인 테마에 맞춰서 에러 페이지 재작성(404, 400, 403, 500  등)
+
+2. 모든 소스에는 작성자와 작성 이유 및 용도에 관한 주석을 작성할 것.
+   : 제공된 comment-template.txt 파일을 참고하여, window->preferences 에서 각 소스별 템플릿에 미리 등록하여 사용.
+
+4. 트랜잭션 관리 대상이 되는 서비스 로직 메소드에 @Transactional  어노테이션을 사용해서 트랜잭션 관리가 되도록 하기 위해서.
+   루트 컨테이너에 tx:annotation-driven  설정을 추가할 것.
+
+      <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+           <property name="dataSource" ref="dataSource"/>
+      </bean>
+
+      <tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="false"/>
+       
+5. 상/하위 컨테이너에 각기 다른 레이어의 객체들을 등록하기 위해 필터링 설정.
+  
+  - 루트 컨테이너 :  @Component, @Service, @Repository  
+      <context:component-scan base-package="kr.or.ctw" use-default-filters="false">
+         <context:include-filter type="annotation" expression="org.springframework.stereotype.Component"/>
+         <context:include-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+         <context:include-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
+         <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+      </context:component-scan>
+
+  - 하위 컨테이너 : @Controller
+       
+      <context:component-scan base-package="kr.or.ctw" use-default-filters="false">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+      	<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
+      </context:component-scan>
+
+6. Model 클래스(VO, DTO)등의 관리 편의를 위해 lombok 라이브러리 적용.
+	1) projectlombok.org 에서 라이브러리 다운로드
+	2) D 드라이브 루트로 해당 파일을 이동시키고,
+	윈도우 콘솔(cmd)에서 
+	d:\>java -jar lombok_version.jar
+	3) lombok 윈도우에서 현재 사용중인 이클립스 실행 파일을 선택하여, lombok 플러그인을 설치하고 이클립스 재시작.
+	4) lombok 의존성 추가(pom.xml)
+	5) lombok으로 관리하고싶은 VO 클래스의 class 선언부에
+	@Data/@ToString/@Setter/@Getter 등의 어노테이션을 사용.
+	
+5. 쿼리 디버깅 편의를 위해 log4jdbc 활용.
+	1) 의존성 추가 : pom.xml
+	<dependency>
+		<groupId>com.googlecode.log4jdbc</groupId>
+		<artifactId>log4jdbc</artifactId>
+		<version>1.2</version>
+	</dependency>
+
+	2) DataSource 설정 변경
+		a) driverClassName : net.sf.log4jdbc.DriverSpy
+		b) url :jdbc:log4jdbc:oracle:thin:@localhost:1521:XE
+
+	3) 로깅 설정 변경 : logback.xml 
+		a) 루트 로거의 로깅 등급은 ERROR
+		b) <logger name="jdbc.sqltiming" level="DEBUG" />
+	4) 로깅 설정 참고 : http://code.google.com/archive/p/log4jdbc
+	
+6. 이클립스 실행 혹은 프로젝트 빌드시 시스템 부하를 줄이기 위해, 가능하면 클라이언트 라이브러리들은 validation 대상에서 제외할 것.
+project properties -> javascript -> include path -> source tab -> exclude edit -> exclude pattern edit
+**/*.js 혹은 **/webapp/resources/api/*.js 등으로 추가함.
